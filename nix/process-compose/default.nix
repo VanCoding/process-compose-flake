@@ -37,21 +37,22 @@ in
 
   config.outputs =
     let
-      mkProcessComposeWrapper = { name, tui, httpServer, configFile, preHook, postHook }:
+      mkProcessComposeWrapper = { name, arguments, preHook, postHook, }:
         pkgs.writeShellApplication {
           inherit name;
           runtimeInputs = [ config.package ];
           text = ''
-            export PC_CONFIG_FILES=${configFile}
-            ${
-              # Once the following issue is fixed we should be able to simply do:
-              # export PC_DISABLE_TUI=${builtins.toJSON (!config.tui)}
-              # https://github.com/F1bonacc1/process-compose/issues/75
-              if tui then "" else "export PC_DISABLE_TUI=true"
-            }
             ${preHook}
 
-            set -x; process-compose ${httpServer.outputs.cliOpts} "$@"; set +x
+            params=(${arguments.global})
+            set +u
+            if [ -z "$1" ] || [[ "$1" == "up" ]] || [[ "$1" == -* ]] ; then
+              params+=(${arguments.up})
+            fi
+
+            set -x;
+            process-compose "''${params[@]}" "$@";
+            set +x
 
             ${postHook}
           '';
@@ -62,8 +63,8 @@ in
         mkProcessComposeWrapper
           {
             inherit name;
-            inherit (config) tui httpServer preHook postHook;
-            configFile = config.outputs.settingsFile;
+            inherit (config) preHook postHook;
+            arguments = config.arguments.output;
           };
       testPackage =
         if
@@ -72,10 +73,9 @@ in
           mkProcessComposeWrapper
             {
               name = "${name}-test";
-              inherit (config) tui httpServer preHook postHook;
-              configFile = config.outputs.settingsTestFile;
+              inherit (config) preHook postHook;
+              arguments = config.test-arguments.output;
             }
         else null;
     };
 }
-

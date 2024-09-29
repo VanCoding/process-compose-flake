@@ -76,6 +76,25 @@
               };
             };
           };
+
+        # nix run .#ponysay up to start the process
+        packages.ponysay = (import ../nix/eval-modules.nix).makeProcessCompose {
+          inherit pkgs;
+          name = "ponysay";
+          modules = [{
+            arguments.detached = true;
+            settings = {
+              processes = {
+                ponysay.command = ''
+                  while true; do
+                    ${lib.getExe pkgs.ponysay} "Hi!"
+                    sleep 2
+                  done
+                '';
+              };
+            };
+          }];
+        };
       };
     };
 }

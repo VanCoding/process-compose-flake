@@ -78,6 +78,8 @@
           };
 
         # nix run .#ponysay up to start the process
+        # nun run .#ponysay attach to show the output
+        # nix run .#ponysay down to stop the process
         packages.ponysay = (import ../nix/eval-modules.nix).makeProcessCompose {
           inherit pkgs;
           name = "ponysay";
